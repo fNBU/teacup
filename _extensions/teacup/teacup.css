@@ -1,0 +1,39 @@
+/* teacup: layout and theme defaults for inlined TikZ SVGs.
+ *
+ * The sentinel-color remapping rules (attribute selectors -> CSS custom
+ * properties, currentColor for ink) are generated from PALETTE in teacup.lua
+ * and injected into the document head at render time — do not add them here.
+ * This file only carries layout and the default light/dark variable values.
+ */
+
+.teacup-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.teacup {
+  color: inherit; /* currentColor ink follows the page text color */
+}
+
+/* Default palettes per Quarto theme. Override these variables in your own
+ * SCSS/CSS to rebrand every diagram at once. */
+body.quarto-light {
+  --teacup-accent:  #b45c00;
+  --teacup-accent2: #0072b2;
+  --teacup-accent3: #007a59;
+  --teacup-accent4: #c24400;
+  --teacup-accent5: #a34d7e;
+  --teacup-muted:   #767676;
+  --teacup-canvas:  transparent;
+}
+
+body.quarto-dark {
+  --teacup-accent:  #ffc04d;
+  --teacup-accent2: #58b6ff;
+  --teacup-accent3: #35d0a0;
+  --teacup-accent4: #ff8a4d;
+  --teacup-accent5: #f0a3cc;
+  --teacup-muted:   #9a9a9a;
+  --teacup-canvas:  transparent;
+}

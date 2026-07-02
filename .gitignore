@@ -1,0 +1,25 @@
+# Rendered output (regenerate with `just example`)
+example.html
+example_files/
+dark-test.html
+
+# Compiled-diagram caches
+_teacup-cache/
+test/fixtures/_fixture-cache/
+
+# Test render output (kept after `just test` for inspection; `just clean`
+# removes it)
+test/fixtures/*.html
+test/fixtures/*.pdf
+test/fixtures/*.tex
+test/fixtures/*_files/
+
+# Quarto working directory
+/.quarto/
+
+# TeX detritus, in case someone compiles by hand in-tree
+*.aux
+*.log
+*.dvi
+*.fls
+*.synctex.gz

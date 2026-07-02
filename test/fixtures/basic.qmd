@@ -1,0 +1,23 @@
+---
+title: "teacup e2e fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+---
+
+Two diagrams sharing a font (scoping must keep their subsets apart), plus a
+width override and a user id.
+
+```{.tikz}
+\draw[->, accent] (0,0) -- (1,0) node[right] {$a$};
+```
+
+```{.tikz}
+\draw[->, accent2] (0,0) -- (0,1) node[above] {$b$};
+```
+
+```{#fig-circ .tikz width="25%"}
+\draw[muted] (0,0) circle (1) node {$c$};
+```

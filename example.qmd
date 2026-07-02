@@ -1,0 +1,55 @@
+---
+title: "teacup demo"
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+filters:
+  - teacup
+---
+
+Diagrams below are inline SVG in the DOM: ink is `currentColor`, accents are
+CSS variables, and the size is in `em` so diagrams track the surrounding font
+size. Toggle dark mode to see labels and colors follow the theme.
+
+## Linear map as a commutative square
+
+```{.tikz}
+\begin{tikzpicture}[node distance=2.4cm, >=Stealth]
+  \node (V) {$V$};
+  \node (W) [right=of V] {$W$};
+  \node (Vq) [below=of V] {$V/\ker T$};
+  \node (im) [below=of W] {$\operatorname{im}\,T$};
+  \draw[->, thick, accent] (V) -- node[above] {$T$} (W);
+  \draw[->] (V) -- node[left] {$\pi$} (Vq);
+  \draw[->, accent2] (Vq) -- node[below] {$\bar T$} (im);
+  \draw[{Hooks[right]}->] (im) -- node[right] {$\iota$} (W);
+\end{tikzpicture}
+```
+
+## Vectors in the plane
+
+Inline text for size comparison: the labels $u$, $v$, $u+v$ should match this
+paragraph's rendered math size.
+
+```{.tikz}
+\begin{tikzpicture}[scale=1.2, >=Stealth]
+  \draw[muted, ->] (-0.5,0) -- (4,0) node[below] {$x$};
+  \draw[muted, ->] (0,-0.5) -- (0,3) node[left] {$y$};
+  \draw[->, thick, accent]  (0,0) -- (3,1)   node[midway, below right] {$u$};
+  \draw[->, thick, accent2] (0,0) -- (1,2)   node[midway, above left]  {$v$};
+  \draw[->, thick, accent3] (0,0) -- (4,3)   node[above right] {$u+v$};
+  \draw[dashed, muted] (3,1) -- (4,3);
+  \draw[dashed, muted] (1,2) -- (4,3);
+\end{tikzpicture}
+```
+
+## Width override
+
+Same figure forced to 30% column width via `width="30%"`:
+
+```{.tikz width="30%"}
+\draw[thick, accent] (0,0) circle (1);
+\draw[->] (0,0) -- (45:1) node[midway, above left] {$r$};
+```

@@ -1,0 +1,11 @@
+---
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+---
+
+```{.tikz}
+\draw[->] (0,0) -- \thiscommanddoesnotexist;
+```
