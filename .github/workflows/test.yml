@@ -13,14 +13,16 @@ jobs:
 
       # Line one is the minimal TeX set teacup is designed for (see README);
       # if it ever needs to grow, that is a regression in itself.
-      # texlive-latex-extra is NOT needed by teacup: it satisfies Quarto's own
-      # PDF template (xurl, framed, upquote) for the PDF e2e tests.
+      # texlive-latex-extra, texlive-xetex and lmodern are NOT needed by
+      # teacup: they satisfy Quarto's own PDF machinery (xurl/framed/upquote,
+      # the default xelatex engine, and its default font) for the PDF e2e
+      # tests.
       - name: Install TeX toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-pictures texlive-latex-recommended texlive-plain-generic dvisvgm \
-            texlive-latex-extra lmodern
+            texlive-latex-extra texlive-xetex lmodern
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
