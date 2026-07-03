@@ -94,6 +94,26 @@ check(tp:find("\\definecolor{ink}", 1, true), "tikz_preamble defines ink")
 check(tp:find("every picture/.style={color=ink}", 1, true),
   "tikz_preamble sets the every-picture ink default")
 
+-- meta_to_string must preserve raw TeX, which pandoc.utils.stringify drops.
+-- Regression: \usetikzlibrary{arrows} in the preamble metadata was silently
+-- discarded because pandoc parses it as a RawInline.
+local raw = pandoc.RawInline("tex", "\\usetikzlibrary{arrows}")
+check(t.meta_to_string(pandoc.Inlines{raw}) == "\\usetikzlibrary{arrows}",
+  "raw TeX inline preserved", t.meta_to_string(pandoc.Inlines{raw}))
+check(t.meta_to_string(pandoc.List{
+    pandoc.Inlines{pandoc.RawInline("tex", "\\usetikzlibrary{arrows}")},
+    pandoc.Inlines{pandoc.RawInline("tex", "\\definecolor{x}{HTML}{FF0000}")},
+  }) == "\\usetikzlibrary{arrows}\n\\definecolor{x}{HTML}{FF0000}",
+  "YAML list of raw TeX joined with newlines")
+check(t.meta_to_string(pandoc.Blocks{
+    pandoc.RawBlock("tex", "\\usetikzlibrary{arrows}\n\\usetikzlibrary{shapes}"),
+  }) == "\\usetikzlibrary{arrows}\n\\usetikzlibrary{shapes}",
+  "block scalar with raw TeX preserved")
+check(t.meta_to_string(pandoc.Inlines{
+    pandoc.Str("plain"), pandoc.Space(), pandoc.Str("text"),
+  }) == "plain text", "plain inline text still stringified")
+check(t.meta_to_string(nil) == nil, "nil metadata stays nil")
+
 -- log tail helper returns the last lines
 local logtext = table.concat({"a", "b", "c", "d", "e"}, "\n")
 check(t.tail(logtext, 2):find("d\ne$"), "tail returns last n lines")

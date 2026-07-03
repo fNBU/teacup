@@ -109,11 +109,36 @@ local ENGINE = "latex"
 local palette_css_injected = false
 local latex_preamble_injected = false
 
+-- pandoc.utils.stringify drops RawInline/RawBlock content, and pandoc parses
+-- LaTeX commands in metadata strings (e.g. \usetikzlibrary{arrows}) as raw
+-- TeX — so a stringify-only conversion silently discards most preambles.
+-- Convert manually, preserving raw elements verbatim.
+local function inlines_to_string(inlines)
+  local parts = {}
+  for _, el in ipairs(inlines) do
+    if el.t == "RawInline" then parts[#parts + 1] = el.text
+    elseif el.t == "SoftBreak" or el.t == "LineBreak" then parts[#parts + 1] = "\n"
+    else parts[#parts + 1] = pandoc.utils.stringify(el) end
+  end
+  return table.concat(parts)
+end
+
 local function meta_to_string(v)
   if v == nil then return nil end
-  if type(v) == "table" and v.t == "MetaList" then
+  local ty = pandoc.utils.type(v)
+  if ty == "List" then -- YAML list: one entry per line
     local parts = {}
-    for _, item in ipairs(v) do parts[#parts + 1] = pandoc.utils.stringify(item) end
+    for _, item in ipairs(v) do parts[#parts + 1] = meta_to_string(item) end
+    return table.concat(parts, "\n")
+  elseif ty == "Inlines" then
+    return inlines_to_string(v)
+  elseif ty == "Blocks" then -- YAML block scalar (|): one Para/RawBlock per chunk
+    local parts = {}
+    for _, b in ipairs(v) do
+      if b.t == "RawBlock" then parts[#parts + 1] = b.text
+      elseif b.content then parts[#parts + 1] = inlines_to_string(b.content)
+      else parts[#parts + 1] = pandoc.utils.stringify(b) end
+    end
     return table.concat(parts, "\n")
   end
   return pandoc.utils.stringify(v)
@@ -319,6 +344,7 @@ if os.getenv("TEACUP_TEST") then
     palette_css = palette_css,
     palette_preamble = palette_preamble,
     tikz_preamble = tikz_preamble,
+    meta_to_string = meta_to_string,
     tail = tail,
     PALETTE = PALETTE,
     TEX_TEMPLATE = TEX_TEMPLATE,

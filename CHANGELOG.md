@@ -1,3 +1,11 @@
+# Unreleased
+
+- Fix: raw TeX in the `preamble` metadata (e.g. `\usetikzlibrary{arrows}`)
+  was silently dropped. pandoc parses LaTeX commands in metadata as raw
+  inlines/blocks, and `pandoc.utils.stringify` discards raw content; the
+  conversion now preserves raw elements verbatim (strings, YAML lists, and
+  `|` block scalars).
+
 # v0.1.0
 
 Initial release.
