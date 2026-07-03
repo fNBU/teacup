@@ -7,7 +7,7 @@ Quarto: size coordination with surrounding text, and light/dark theming.
 
 ## How it works
 
-Each `{.tikz}` code block is compiled `dvilualatex → dvisvgm` (text kept as SVG
+Each `{.tikz}` code block is compiled `latex → dvisvgm` (text kept as SVG
 `<text>` with embedded WOFF2 subsets of the TeX fonts), then post-processed:
 
 - **Size:** `width`/`height` attributes are stripped (only `viewBox` remains)
