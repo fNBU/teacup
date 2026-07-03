@@ -29,7 +29,7 @@ Each `{.tikz}` code block is compiled `latex → dvisvgm` (text kept as SVG
 ## Install
 
 ```sh
-quarto add fNBU/teacup
+quarto add fNBU/teacup@trunk
 ```
 
 This installs the extension under the `_extensions` subdirectory of your
