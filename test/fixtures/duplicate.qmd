@@ -1,0 +1,22 @@
+---
+title: "teacup duplicate-block fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+---
+
+Two byte-identical diagrams share a content hash and a cache entry, but
+must not share HTML ids — neither the root `teacup-<hash>` id nor the
+scoped def ids (regression check for the occurrence counter).
+
+```{.tikz}
+\clip (0,0) rectangle (1.5,0.8);
+\shade[left color=accent,right color=accent2] (0,0) rectangle (2,1);
+```
+
+```{.tikz}
+\clip (0,0) rectangle (1.5,0.8);
+\shade[left color=accent,right color=accent2] (0,0) rectangle (2,1);
+```

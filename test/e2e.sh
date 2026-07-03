@@ -17,6 +17,7 @@ check() { # check <description> — reads exit status of the previous command
 rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/preamble.html \
        "$FIX"/viewbox.html "$FIX"/viewbox_files \
        "$FIX"/idcollision.html "$FIX"/idcollision_files \
+       "$FIX"/duplicate.html "$FIX"/duplicate_files \
        "$FIX"/overlay.html "$FIX"/overlay_files \
        "$FIX"/basic_files "$FIX"/broken_files "$FIX"/preamble_files \
        "$FIX"/basic.pdf "$FIX"/basic.tex "$FIX"/_fixture-cache
@@ -154,6 +155,28 @@ max_text_x=$(grep -oE "[^a-z]x=['\"][0-9. -]+['\"]" "$FIX/overlay.html" | grep -
 awk -v minx="${ov_minx:-0}" -v w="${ov_w:-0}" -v tx="${max_text_x:-99999}" \
   'BEGIN { exit !(minx + w >= tx + 12) }'
 check "overlay text inside the viewBox (max text x=${max_text_x:-none}, viewBox spans ${ov_minx:-none}+${ov_w:-none})"
+
+# --- byte-identical blocks -----------------------------------------------
+# identical blocks share a hash (and cache entry) but must not share ids:
+# the occurrence counter disambiguates the root id and all def ids.
+DUPOUT=$FIX/duplicate.html
+quarto render "$FIX/duplicate.qmd" >/dev/null 2>&1 && [ -f "$DUPOUT" ]
+check "duplicate.qmd renders"
+
+[ "$(grep -c '<svg' "$DUPOUT")" -eq 2 ]
+check "both identical diagrams present"
+
+[ -z "$(grep -oE 'id="[^"]+"' "$DUPOUT" | sort | uniq -d)" ]
+check "no duplicate ids for byte-identical blocks"
+
+dup_refs=$(grep -oE 'url\(#[^)]+\)' "$DUPOUT" | sed 's/.*#//; s/)//' | sort -u)
+dup_missing=0
+for r in $dup_refs; do grep -q "id=\"$r\"" "$DUPOUT" || dup_missing=1; done
+[ -n "$dup_refs" ] && [ "$dup_missing" -eq 0 ]
+check "identical blocks' url(#...) refs resolve to their own defs"
+
+grep -q 'id="teacup-[0-9a-f]*-2"' "$DUPOUT"
+check "second occurrence carries the -2 counter"
 
 # --- failing render ------------------------------------------------------
 err=$(quarto render "$FIX/broken.qmd" 2>&1)

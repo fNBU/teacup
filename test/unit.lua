@@ -37,9 +37,10 @@ text.f1 {font-family:cmmi10;font-size:9.96px}
 </svg>
 ]==]
 local HASH = "0123456789abcdef0123456789abcdef01234567"
+local TAG = HASH:sub(1, 8) -- what unique_tag() yields for the first occurrence
 
 -- default sizing: em width computed from pt width / 10pt base font
-local out = t.postprocess(SAMPLE, HASH, nil, "", "")
+local out = t.postprocess(SAMPLE, TAG, nil, "", "")
 check(out:find('style="width:11%.9780em;max%-width:100%%;height:auto;overflow:visible;"'),
   "em width = pt/10, overflow backstop present", out:match('style="[^"]*"'))
 check(not out:find("width='119"), "width attribute stripped")
@@ -50,11 +51,11 @@ check(not out:find("<!%-%-"), "comments removed")
 
 -- width override, including '%' (regression: '%' is special in gsub
 -- replacements and once crashed the filter)
-out = t.postprocess(SAMPLE, HASH, "30%", "", "")
+out = t.postprocess(SAMPLE, TAG, "30%", "", "")
 check(out:find('width:30%%;max%-width', 1, false), "width override with % survives gsub")
 
 -- scoping: hash-derived id, style selectors and font names made per-diagram
-out = t.postprocess(SAMPLE, HASH, nil, "", "")
+out = t.postprocess(SAMPLE, TAG, nil, "", "")
 check(out:find('id="teacup%-01234567"'), "hash-derived id on svg root")
 check(out:find("#teacup%-01234567 text%.f0"), "text.f0 selector scoped to id")
 check(out:find("#teacup%-01234567 text%.f1"), "text.f1 selector scoped to id")
@@ -64,7 +65,7 @@ check(not out:find("font%-family:cmr10[^%-]"), "no unscoped font family remains"
 -- element ids (clipPaths, gradients, page group) and their url(#)/href
 -- references are scoped per diagram; dvisvgm restarts pgfcp1/pgfsh1/page1
 -- numbering in every SVG, which collides document-globally when inlined
-out = t.postprocess(SAMPLE, HASH, nil, "", "")
+out = t.postprocess(SAMPLE, TAG, nil, "", "")
 check(out:find("id='pgfcp1%-01234567'"), "clipPath id hash-suffixed")
 check(out:find("clip%-path='url%(#pgfcp1%-01234567%)'"), "clip-path ref follows its id")
 check(out:find("id='pgfsh1%-01234567'"), "gradient id hash-suffixed")
@@ -75,12 +76,12 @@ check(not out:find("url%(#pgfcp1%)"), "no unscoped url reference remains")
 check(not out:find("id='pgfcp1'"), "no unscoped element id remains")
 
 -- user-supplied id wins over the hash id
-out = t.postprocess(SAMPLE, HASH, nil, "", "fig-kernel")
+out = t.postprocess(SAMPLE, TAG, nil, "", "fig-kernel")
 check(out:find('id="fig%-kernel"'), "user id used on svg root")
 check(out:find("#fig%-kernel text%.f0"), "style selectors scoped to user id")
 
 -- extra classes carried onto the root
-out = t.postprocess(SAMPLE, HASH, nil, "wide bordered", "")
+out = t.postprocess(SAMPLE, TAG, nil, "wide bordered", "")
 check(out:find('class="teacup wide bordered"'), "extra classes appended")
 
 -- generated palette CSS: single source of truth checks
@@ -122,7 +123,7 @@ check(out:find("viewBox='%-72 %-72 63%.5000 104%.2500'"),
 check(out:find("width='63%.5000pt'"), "width attribute replaced")
 check(out:find("height='104%.2500pt'"), "height attribute replaced")
 -- and the corrected width drives the em conversion downstream
-out = t.postprocess(t.fix_viewbox(SAMPLE, 63.5, 100.0, 4.25), HASH, nil, "", "")
+out = t.postprocess(t.fix_viewbox(SAMPLE, 63.5, 100.0, 4.25), TAG, nil, "", "")
 check(out:find('style="width:6%.3500em'), "em width computed from corrected width")
 -- an svg without a viewBox is passed through unchanged
 check(t.fix_viewbox("<svg width='3pt'></svg>", 1, 1, 1) == "<svg width='3pt'></svg>",
@@ -147,6 +148,20 @@ check(t.meta_to_string(pandoc.Inlines{
     pandoc.Str("plain"), pandoc.Space(), pandoc.Str("text"),
   }) == "plain text", "plain inline text still stringified")
 check(t.meta_to_string(nil) == nil, "nil metadata stays nil")
+
+-- unique_tag disambiguates byte-identical blocks: same hash, distinct tags,
+-- so repeated diagrams don't produce duplicate HTML ids (root or defs)
+check(t.unique_tag(HASH) == "01234567", "first occurrence: bare hash tag")
+check(t.unique_tag(HASH) == "01234567-2", "second occurrence: -2 suffix")
+check(t.unique_tag(HASH) == "01234567-3", "third occurrence: -3 suffix")
+check(t.unique_tag("fedcba9876543210fedcba9876543210fedcba98") == "fedcba98",
+  "different hash starts its own count")
+-- a repeat-occurrence tag flows through to root id, fonts, and def ids
+out = t.postprocess(SAMPLE, "01234567-2", nil, "", "")
+check(out:find('id="teacup%-01234567%-2"'), "repeat root id carries the counter")
+check(out:find("font%-family:cmr10%-01234567%-2"), "repeat font suffix carries the counter")
+check(out:find("id='pgfcp1%-01234567%-2'"), "repeat def id carries the counter")
+check(out:find("clip%-path='url%(#pgfcp1%-01234567%-2%)'"), "repeat def ref carries the counter")
 
 -- log tail helper returns the last lines
 local logtext = table.concat({"a", "b", "c", "d", "e"}, "\n")

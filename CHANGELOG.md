@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Byte-identical diagrams in one document produced duplicate HTML ids (root
+  `teacup-<hash>` and the scoped def ids), so fragment links,
+  `getElementById`, and `url(#…)` references resolved only to the first
+  occurrence. Repeat occurrences now get a per-document counter suffix
+  (`teacup-<hash>-2`, …) on the root id, font names, and def ids. Caching
+  is unaffected: identical blocks still share one cache entry.
+
 - dvisvgm's internal element ids (`pgfcp*` clipPaths, `pgfsh*` gradients,
   `page1`) restart in every SVG and collide when diagrams are inlined into
   one document: every diagram after the first using `\clip`/`\shade` was

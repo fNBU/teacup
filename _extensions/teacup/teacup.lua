@@ -286,8 +286,22 @@ local function compile_tikz(tex_source)
   return result, hash
 end
 
+-- Byte-identical blocks share a content hash (and, deliberately, a cache
+-- entry), but their inlined SVGs must not share ids: duplicate ids are
+-- invalid HTML, and fragment links / getElementById / the def-id scoping
+-- all resolve only to the first occurrence. Disambiguate repeats with a
+-- per-document counter: 01234567, 01234567-2, 01234567-3, ...
+local SEEN_HASHES = {}
+local function unique_tag(hash)
+  local n = (SEEN_HASHES[hash] or 0) + 1
+  SEEN_HASHES[hash] = n
+  local tag = hash:sub(1, 8)
+  return n == 1 and tag or (tag .. "-" .. n)
+end
+
 -- Turn raw dvisvgm output into an inline-ready fragment sized in em.
-local function postprocess(svg, hash, attr_width, extra_classes, user_id)
+-- `tag` is the per-occurrence scoping tag from unique_tag().
+local function postprocess(svg, tag, attr_width, extra_classes, user_id)
   -- drop the XML prolog and comments; inline HTML must not carry them
   svg = svg:gsub("<%?xml.-%?>%s*", "")
   svg = svg:gsub("<!%-%-.-%-%->%s*", "")
@@ -297,9 +311,9 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
   -- (cmr10, text.f0, ...). Without scoping, one diagram's font subset would
   -- shadow another's and glyphs would silently disappear. Scope both to a
   -- per-diagram id derived from the content hash.
-  local id = user_id ~= "" and user_id or ("teacup-" .. hash:sub(1, 8))
+  local id = user_id ~= "" and user_id or ("teacup-" .. tag)
   svg = svg:gsub("(<style.-</style>)", function(style)
-    style = style:gsub("font%-family:%s*([%w%.%-]+)", "font-family:" .. "%1-" .. hash:sub(1, 8))
+    style = style:gsub("font%-family:%s*([%w%.%-]+)", "font-family:" .. "%1-" .. tag)
     style = style:gsub("text%.f", "#" .. id .. " text.f")
     return style
   end)
@@ -308,11 +322,10 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
   -- gradients, page1): inlined into one document, url(#pgfcp1) resolves
   -- document-globally to the FIRST diagram's element, so later diagrams get
   -- the first one's clip geometry and gradients. Scope ids and references
-  -- with the same hash suffix. (Runs before the root <svg> gets its own id.)
-  local suffix = hash:sub(1, 8)
-  svg = svg:gsub("(%sid=['\"])([^'\"]+)(['\"])", "%1%2-" .. suffix .. "%3")
-  svg = svg:gsub("url%(#([^%)]+)%)", "url(#%1-" .. suffix .. ")")
-  svg = svg:gsub("(href=['\"]#)([^'\"]+)", "%1%2-" .. suffix)
+  -- with the same tag. (Runs before the root <svg> gets its own id.)
+  svg = svg:gsub("(%sid=['\"])([^'\"]+)(['\"])", "%1%2-" .. tag .. "%3")
+  svg = svg:gsub("url%(#([^%)]+)%)", "url(#%1-" .. tag .. ")")
+  svg = svg:gsub("(href=['\"]#)([^'\"]+)", "%1%2-" .. tag)
 
   local open_tag = svg:match("<svg[^>]*>")
   if not open_tag then
@@ -391,7 +404,7 @@ local function CodeBlock(el)
   for _, c in ipairs(el.classes) do
     if c ~= "tikz" then extra_classes[#extra_classes + 1] = c end
   end
-  svg = postprocess(svg, hash, el.attributes["width"],
+  svg = postprocess(svg, unique_tag(hash), el.attributes["width"],
     table.concat(extra_classes, " "), el.identifier)
 
   return pandoc.RawBlock("html", '<div class="teacup-wrap">' .. svg .. "</div>")
@@ -407,6 +420,7 @@ if os.getenv("TEACUP_TEST") then
     tikz_preamble = tikz_preamble,
     meta_to_string = meta_to_string,
     fix_viewbox = fix_viewbox,
+    unique_tag = unique_tag,
     tail = tail,
     PALETTE = PALETTE,
     TEX_TEMPLATE = TEX_TEMPLATE,
