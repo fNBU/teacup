@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- dvisvgm's internal element ids (`pgfcp*` clipPaths, `pgfsh*` gradients,
+  `page1`) restart in every SVG and collide when diagrams are inlined into
+  one document: every diagram after the first using `\clip`/`\shade` was
+  clipped by the first diagram's clip path and took its gradients. Ids and
+  their `url(#…)`/`href` references are now scoped with the per-diagram
+  hash, like fonts and style rules already were.
+
 - SVG dimensions no longer trust dvisvgm's bounding box, which dvisvgm 3.0.x
   inflates rightward (up to ~50% on TikZ-matrix diagrams, leaving them
   left-pinned with phantom space) and clips at the bottom (descenders).

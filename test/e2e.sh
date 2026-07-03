@@ -16,6 +16,7 @@ check() { # check <description> — reads exit status of the previous command
 # everything after the run for inspection (`just clean` removes it).
 rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/preamble.html \
        "$FIX"/viewbox.html "$FIX"/viewbox_files \
+       "$FIX"/idcollision.html "$FIX"/idcollision_files \
        "$FIX"/basic_files "$FIX"/broken_files "$FIX"/preamble_files \
        "$FIX"/basic.pdf "$FIX"/basic.tex "$FIX"/_fixture-cache
 
@@ -117,6 +118,26 @@ check "viewBox width matches TeX box metrics (~75.6pt), got '${vb_width:-none}'"
 
 grep -q 'style="width:7\.5[0-9]*em' "$FIX/viewbox.html"
 check "em width derived from corrected metrics (~7.56em)"
+
+# --- element id scoping --------------------------------------------------
+# dvisvgm restarts clipPath/gradient ids per SVG; url(#...) resolves
+# document-globally, so without scoping diagram 2 gets diagram 1's clip and
+# gradient (silent content corruption).
+IDOUT=$FIX/idcollision.html
+quarto render "$FIX/idcollision.qmd" >/dev/null 2>&1 && [ -f "$IDOUT" ]
+check "idcollision.qmd renders"
+
+[ -z "$(grep -oE 'id="[^"]+"' "$IDOUT" | sort | uniq -d)" ]
+check "no duplicate element ids in the document"
+
+refs=$(grep -oE 'url\(#[^)]+\)' "$IDOUT" | sed 's/.*#//; s/)//' | sort -u)
+missing=0
+for r in $refs; do grep -q "id=\"$r\"" "$IDOUT" || missing=1; done
+[ -n "$refs" ] && [ "$missing" -eq 0 ]
+check "every url(#...) reference has its own scoped target"
+
+! grep -qE 'url\(#(pgfcp|pgfsh)[0-9]+\)' "$IDOUT"
+check "no unscoped pgf ids referenced"
 
 # --- failing render ------------------------------------------------------
 err=$(quarto render "$FIX/broken.qmd" 2>&1)

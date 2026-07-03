@@ -41,6 +41,7 @@ clean:
         test/fixtures/basic.html test/fixtures/broken.html \
         test/fixtures/preamble.html test/fixtures/preamble_files \
         test/fixtures/viewbox.html test/fixtures/viewbox_files \
+        test/fixtures/idcollision.html test/fixtures/idcollision_files \
         test/fixtures/basic.pdf test/fixtures/basic.tex \
         test/fixtures/basic_files test/fixtures/broken_files \
         test/fixtures/_fixture-cache
