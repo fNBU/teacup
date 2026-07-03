@@ -22,6 +22,11 @@
 --   font-size:    base font size in pt used for the em conversion (default 10)
 --   cache:        cache directory (default "_teacup-cache")
 
+-- Part of the cache key: bump whenever compilation or SVG correction changes
+-- in a way the tex source alone doesn't capture, so stale entries can't be
+-- served.
+local FILTER_VERSION = "2"
+
 local FONT_SIZE_PT = 10.0
 local CACHE_DIR = "_teacup-cache"
 local EXTRA_PREAMBLE = ""
@@ -88,6 +93,11 @@ end
 -- Debian's texlive-latex-extra (~80 MB). dvisvgm computes a tight bounding
 -- box from the ink itself, so page-cropping is unnecessary; \pagestyle{empty}
 -- keeps page numbers from contributing ink.
+-- The picture goes through a savebox so its exact TeX dimensions can be read
+-- back from the log (TEACUP-DIM): dvisvgm 3.0.x miscomputes the bounding box
+-- of pgf's mirror-transform text specials, inflating the viewBox rightward
+-- and clipping descenders, so its reported size cannot be trusted.
+-- lrbox, not \savebox{...}: TikZ matrices break inside the argument form.
 local TEX_TEMPLATE = [[
 \documentclass[%spt,dvisvgm]{article}
 \usepackage{amsmath,amssymb}
@@ -95,8 +105,13 @@ local TEX_TEMPLATE = [[
 \usepackage{tikz}
 %s
 \pagestyle{empty}
+\newsavebox\teacupbox
 \begin{document}
-%s
+\begin{lrbox}{\teacupbox}%%
+%s%%
+\end{lrbox}%%
+\typeout{TEACUP-DIM: \the\wd\teacupbox\space\the\ht\teacupbox\space\the\dp\teacupbox}
+\usebox\teacupbox
 \end{document}
 ]]
 
@@ -204,9 +219,27 @@ local function tail(s, n)
   return table.concat(lines, "\n", start)
 end
 
+-- Overwrite the SVG root's viewBox/width/height with the TeX box metrics.
+-- dvisvgm's left and top edges are trustworthy (all observed inflation is
+-- rightward, all clipping at the bottom), so min-x/min-y are kept and only
+-- the extents are replaced: width = \wd, height = \ht + \dp.
+local function fix_viewbox(svg, wd, ht, dp)
+  local minx, miny = svg:match("viewBox=['\"]([%-%d%.]+) ([%-%d%.]+) [%-%d%.]+ [%-%d%.]+['\"]")
+  if not minx then
+    io.stderr:write("[teacup] warning: no viewBox in dvisvgm output; keeping its dimensions\n")
+    return svg
+  end
+  local h = ht + dp
+  svg = svg:gsub("viewBox=['\"][^'\"]*['\"]",
+    string.format("viewBox='%s %s %.4f %.4f'", minx, miny, wd, h), 1)
+  svg = svg:gsub("width=['\"][^'\"]*['\"]", string.format("width='%.4fpt'", wd), 1)
+  svg = svg:gsub("height=['\"][^'\"]*['\"]", string.format("height='%.4fpt'", h), 1)
+  return svg
+end
+
 -- Compile tex source to raw SVG text, using the cache when possible.
 local function compile_tikz(tex_source)
-  local hash = pandoc.utils.sha1(ENGINE .. "\n" .. tex_source)
+  local hash = pandoc.utils.sha1(FILTER_VERSION .. "\n" .. ENGINE .. "\n" .. tex_source)
   ensure_dir(CACHE_DIR)
   local cached = CACHE_DIR .. "/" .. hash .. ".svg"
   local svg = read_file(cached)
@@ -231,6 +264,14 @@ local function compile_tikz(tex_source)
     result = read_file(tmp .. "/fig.svg")
     if not ok2 or not result then
       error("[teacup] dvisvgm failed:\n" .. out2)
+    end
+
+    local wd, ht, dp = log:match("TEACUP%-DIM: ([%d%.]+)pt ([%d%.]+)pt ([%d%.]+)pt")
+    if wd then
+      result = fix_viewbox(result, tonumber(wd), tonumber(ht), tonumber(dp))
+    else
+      io.stderr:write("[teacup] warning: TEACUP-DIM not found in the LaTeX log; " ..
+        "keeping dvisvgm's (possibly inflated) dimensions\n")
     end
   end)
 
@@ -348,6 +389,7 @@ if os.getenv("TEACUP_TEST") then
     palette_preamble = palette_preamble,
     tikz_preamble = tikz_preamble,
     meta_to_string = meta_to_string,
+    fix_viewbox = fix_viewbox,
     tail = tail,
     PALETTE = PALETTE,
     TEX_TEMPLATE = TEX_TEMPLATE,

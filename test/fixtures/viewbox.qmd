@@ -1,0 +1,19 @@
+---
+title: "teacup viewBox fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+  preamble: \usetikzlibrary{matrix}
+---
+
+A `matrix of math nodes` makes dvisvgm 3.0.x inflate the viewBox ~40%
+rightward (mirror-transform text specials). The TeX box metrics say this
+picture is 75.58pt wide; dvisvgm claims 106.89pt. (Regression check for the
+savebox-based dimension fix.)
+
+```{.tikz}
+\matrix (m) [matrix of math nodes,column sep=4em]
+{ A & B \\};
+```
