@@ -40,8 +40,8 @@ local HASH = "0123456789abcdef0123456789abcdef01234567"
 
 -- default sizing: em width computed from pt width / 10pt base font
 local out = t.postprocess(SAMPLE, HASH, nil, "", "")
-check(out:find('style="width:11%.9780em;max%-width:100%%;height:auto;"'),
-  "em width = pt/10", out:match('style="[^"]*"'))
+check(out:find('style="width:11%.9780em;max%-width:100%%;height:auto;overflow:visible;"'),
+  "em width = pt/10, overflow backstop present", out:match('style="[^"]*"'))
 check(not out:find("width='119"), "width attribute stripped")
 check(not out:find("height='111"), "height attribute stripped")
 check(out:find("viewBox='%-72 %-72 119%.78 111%.46'"), "viewBox preserved")

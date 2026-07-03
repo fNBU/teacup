@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their `url(#…)`/`href` references are now scoped with the per-diagram
   hash, like fonts and style rules already were.
 
+- Ink outside the viewBox (`use as bounding box`,
+  `\pgfinterruptboundingbox`) is no longer clipped: the SVG root now carries
+  `overflow:visible`, so such ink overhangs the layout box the way it
+  overhangs neighboring content in print.
+
+- `overlay` ink (annotations positioned outside the TikZ bounding box) was
+  silently clipped out of the viewBox by the TeX-box-metrics override. In
+  the standalone HTML compile the `overlay` key is now neutralized so that
+  all ink counts toward the picture size; the LaTeX/PDF passthrough keeps
+  real overlay semantics. Cache filter version bumped.
+
 - SVG dimensions no longer trust dvisvgm's bounding box, which dvisvgm 3.0.x
   inflates rightward (up to ~50% on TikZ-matrix diagrams, leaving them
   left-pinned with phantom space) and clips at the bottom (descenders).

@@ -25,7 +25,7 @@
 -- Part of the cache key: bump whenever compilation or SVG correction changes
 -- in a way the tex source alone doesn't capture, so stale entries can't be
 -- served.
-local FILTER_VERSION = "2"
+local FILTER_VERSION = "3"
 
 local FONT_SIZE_PT = 10.0
 local CACHE_DIR = "_teacup-cache"
@@ -98,11 +98,15 @@ end
 -- of pgf's mirror-transform text specials, inflating the viewBox rightward
 -- and clipping descenders, so its reported size cannot be trusted.
 -- lrbox, not \savebox{...}: TikZ matrices break inside the argument form.
+-- overlay is neutralized (standalone compile only, not the PDF passthrough):
+-- it excludes ink from pgf's bounding box, which in a standalone picture can
+-- only clip that ink out of the viewBox — here all ink must count.
 local TEX_TEMPLATE = [[
 \documentclass[%spt,dvisvgm]{article}
 \usepackage{amsmath,amssymb}
 \def\pgfsysdriver{pgfsys-dvisvgm.def}
 \usepackage{tikz}
+\tikzset{overlay/.code={}}
 %s
 \pagestyle{empty}
 \newsavebox\teacupbox
@@ -331,8 +335,11 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
   end
 
   local class = "teacup" .. (extra_classes ~= "" and (" " .. extra_classes) or "")
+  -- overflow:visible: ink outside the viewBox (use as bounding box,
+  -- \pgfinterruptboundingbox) still renders, overhanging the layout box as
+  -- it would on a printed page, instead of being silently clipped.
   local svg_attrs = string.format(
-    '<svg id=%q class=%q style="width:%s;max-width:100%%;height:auto;" role="img"',
+    '<svg id=%q class=%q style="width:%s;max-width:100%%;height:auto;overflow:visible;" role="img"',
     id, class, css_width)
   -- function replacements: attribute values may contain '%', which is special
   -- in gsub replacement strings
