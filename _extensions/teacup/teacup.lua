@@ -304,6 +304,16 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
     return style
   end)
 
+  -- Element ids restart per SVG too (pgfcp1 for clipPaths, pgfsh1 for
+  -- gradients, page1): inlined into one document, url(#pgfcp1) resolves
+  -- document-globally to the FIRST diagram's element, so later diagrams get
+  -- the first one's clip geometry and gradients. Scope ids and references
+  -- with the same hash suffix. (Runs before the root <svg> gets its own id.)
+  local suffix = hash:sub(1, 8)
+  svg = svg:gsub("(%sid=['\"])([^'\"]+)(['\"])", "%1%2-" .. suffix .. "%3")
+  svg = svg:gsub("url%(#([^%)]+)%)", "url(#%1-" .. suffix .. ")")
+  svg = svg:gsub("(href=['\"]#)([^'\"]+)", "%1%2-" .. suffix)
+
   local open_tag = svg:match("<svg[^>]*>")
   if not open_tag then
     error("[teacup] unexpected dvisvgm output: no <svg> root element found")
@@ -325,8 +335,11 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
   end
 
   local class = "teacup" .. (extra_classes ~= "" and (" " .. extra_classes) or "")
+  -- overflow:visible: ink outside the viewBox (use as bounding box,
+  -- \pgfinterruptboundingbox) still renders, overhanging the layout box as
+  -- it would on a printed page, instead of being silently clipped.
   local svg_attrs = string.format(
-    '<svg id=%q class=%q style="width:%s;max-width:100%%;height:auto;" role="img"',
+    '<svg id=%q class=%q style="width:%s;max-width:100%%;height:auto;overflow:visible;" role="img"',
     id, class, css_width)
   -- function replacements: attribute values may contain '%', which is special
   -- in gsub replacement strings
