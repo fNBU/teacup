@@ -1,0 +1,5 @@
+{
+    "runtime.version": "Lua 5.4",
+    "diagnostics.globals": ["pandoc", "quarto", "PANDOC_STATE"],
+    "workspace.ignoreDir": ["test/fixtures/_extensions"]
+}

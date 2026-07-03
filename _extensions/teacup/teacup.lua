@@ -144,7 +144,7 @@ local function meta_to_string(v)
   return pandoc.utils.stringify(v)
 end
 
-function get_meta(meta)
+local function get_meta(meta)
   local opts = meta["teacup"]
   if opts then
     local pre = meta_to_string(opts["preamble"])
@@ -188,8 +188,11 @@ end
 
 -- Run a command; return success, combined output. Never silently swallows.
 local function run(cmd)
-  local pipe = io.popen(cmd .. " 2>&1")
-  local output = pipe:read("a")
+  local pipe, perr = io.popen(cmd .. " 2>&1")
+  if not pipe then
+    error("[teacup] cannot spawn command '" .. cmd .. "': " .. tostring(perr))
+  end
+  local output = pipe:read("a") or ""
   local ok = pipe:close()
   return ok, output
 end
@@ -286,7 +289,7 @@ local function postprocess(svg, hash, attr_width, extra_classes, user_id)
   return svg:gsub("<svg[^>]*>", function() return new_tag end, 1)
 end
 
-function CodeBlock(el)
+local function CodeBlock(el)
   if not el.classes:includes("tikz") then return nil end
 
   local body = el.text

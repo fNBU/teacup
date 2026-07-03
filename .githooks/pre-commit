@@ -1,0 +1,4 @@
+#!/bin/sh
+# Static analysis gate; enable with `just install-hooks`.
+# CI enforces the same check, so PRs are blocked until it passes.
+exec just check
