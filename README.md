@@ -76,6 +76,24 @@ The sentinel-remapping rules themselves are generated from `PALETTE` in
 `teacup.lua` at render time and injected into the document head — `PALETTE`
 is the single source of truth for sentinel hexes and palette names.
 
+## Known limitations
+
+- **Shadings don't theme.** Gradient color stops (`\shade`, `\shadedraw`)
+  keep their compiled colors: the sentinel remapping targets `fill`/`stroke`
+  attributes, not `stop-color`, so a shading between palette colors will not
+  follow `--teacup-*` overrides in dark mode. Solid fills and strokes theme
+  as documented.
+- **Sentinel hexes are reserved.** A user color that happens to equal a
+  sentinel hex (see `PALETTE` in `teacup.lua`, e.g. `#FDFDFC` = `canvas`) is
+  indistinguishable from the palette color and gets remapped — `#FDFDFC`
+  becomes transparent unless themed. Use the palette names, or any hex not
+  in the sentinel table.
+- **`\tikzexternalize` is incompatible.** The `external` library tries to
+  manage its own compilation cache, which cannot work inside teacup's
+  per-block standalone compiles; it fails the render with a confusing LaTeX
+  error. Remove it for HTML builds — teacup already caches compiled
+  diagrams by content hash.
+
 ## Requirements
 
 Minimal Debian/Ubuntu install:
