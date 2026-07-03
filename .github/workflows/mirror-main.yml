@@ -1,0 +1,21 @@
+# Quarto's extension resolver hard-codes the branch name: a bare
+# `quarto add fNBU/teacup` downloads refs/heads/main and nothing else
+# (no default-branch lookup, no releases). Our default branch is trunk,
+# so mirror it to main to keep the bare install form working.
+name: mirror-main
+
+on:
+  push:
+    branches: [trunk]
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git push --force origin trunk:main

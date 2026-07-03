@@ -62,8 +62,14 @@ check "second render reuses the cache"
 # --- PDF output ----------------------------------------------------------
 # LaTeX passthrough: diagrams must arrive as raw tikzpicture environments,
 # with teacup's colors/libraries injected into the preamble exactly once.
-quarto render "$FIX/basic.qmd" --to pdf -M keep-tex:true >/dev/null 2>&1 \
-  && [ -f "$FIX/basic.pdf" ]
+pdf_log=$(quarto render "$FIX/basic.qmd" --to pdf -M keep-tex:true 2>&1)
+pdf_status=$?
+if [ $pdf_status -ne 0 ] || [ ! -f "$FIX/basic.pdf" ]; then
+  echo "--- PDF render output (tail) ---"
+  printf '%s\n' "$pdf_log" | tail -40
+  echo "--------------------------------"
+  false
+fi
 check "basic.qmd renders to PDF"
 
 TEX=$FIX/basic.tex
