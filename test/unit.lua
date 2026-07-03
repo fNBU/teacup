@@ -26,8 +26,14 @@ local SAMPLE = [==[<?xml version='1.0' encoding='UTF-8'?>
 text.f1 {font-family:cmmi10;font-size:9.96px}
 @font-face{font-family:cmr10;src:url(data:application/x-font-woff2;base64,AAAA) format('woff2');}]]>
 </style>
+<g id='page1'>
+<clipPath id='pgfcp1'><path d='M0 0H10V10H0Z'/></clipPath>
+<linearGradient id='pgfsh1'><stop offset='0' stop-color='#e69f00'/></linearGradient>
 <text class='f0' fill='#010101'>V</text>
-<path stroke='#e69f00' d='M0 0L1 1'/>
+<path stroke='#e69f00' clip-path='url(#pgfcp1)' d='M0 0L1 1'/>
+<path fill='url(#pgfsh1)' d='M0 0L2 2'/>
+<use xlink:href='#pgfcp1'/>
+</g>
 </svg>
 ]==]
 local HASH = "0123456789abcdef0123456789abcdef01234567"
@@ -54,6 +60,19 @@ check(out:find("#teacup%-01234567 text%.f0"), "text.f0 selector scoped to id")
 check(out:find("#teacup%-01234567 text%.f1"), "text.f1 selector scoped to id")
 check(out:find("font%-family:cmr10%-01234567"), "font family renamed with hash suffix")
 check(not out:find("font%-family:cmr10[^%-]"), "no unscoped font family remains")
+
+-- element ids (clipPaths, gradients, page group) and their url(#)/href
+-- references are scoped per diagram; dvisvgm restarts pgfcp1/pgfsh1/page1
+-- numbering in every SVG, which collides document-globally when inlined
+out = t.postprocess(SAMPLE, HASH, nil, "", "")
+check(out:find("id='pgfcp1%-01234567'"), "clipPath id hash-suffixed")
+check(out:find("clip%-path='url%(#pgfcp1%-01234567%)'"), "clip-path ref follows its id")
+check(out:find("id='pgfsh1%-01234567'"), "gradient id hash-suffixed")
+check(out:find("fill='url%(#pgfsh1%-01234567%)'"), "gradient ref follows its id")
+check(out:find("id='page1%-01234567'"), "page group id hash-suffixed")
+check(out:find("xlink:href='#pgfcp1%-01234567'"), "href ref follows its id")
+check(not out:find("url%(#pgfcp1%)"), "no unscoped url reference remains")
+check(not out:find("id='pgfcp1'"), "no unscoped element id remains")
 
 -- user-supplied id wins over the hash id
 out = t.postprocess(SAMPLE, HASH, nil, "", "fig-kernel")

@@ -1,0 +1,22 @@
+---
+title: "teacup id-collision fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+---
+
+Two diagrams using `\clip` and `\shade`. dvisvgm restarts its element ids
+(`pgfcp1`, `pgfsh1`) in every SVG; unscoped, diagram 2 would be clipped by
+diagram 1's clip path and shaded with its gradient (regression check).
+
+```{.tikz}
+\clip (0,0) rectangle (1.5,0.8);
+\shade[left color=accent,right color=accent2] (0,0) rectangle (2,1);
+```
+
+```{.tikz}
+\clip (0,0) rectangle (2,2);
+\shade[left color=accent3,right color=accent4] (0,0) rectangle (2,2);
+```
