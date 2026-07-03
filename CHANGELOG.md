@@ -1,6 +1,25 @@
-# v0.1.0
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Fixed
+
+- Raw TeX in the `preamble` metadata (e.g. `\usetikzlibrary{arrows}`)
+  was silently dropped. pandoc parses LaTeX commands in metadata as raw
+  inlines/blocks, and `pandoc.utils.stringify` discards raw content; the
+  conversion now preserves raw elements verbatim (strings, YAML lists, and
+  `|` block scalars).
+
+## [0.1.0] - 2026-07-02
 
 Initial release.
+
+### Added
 
 - `{.tikz}` code blocks render as inline SVG in the DOM (no `<img>`):
   compiled with `latex` → `dvisvgm`, cached by content hash.

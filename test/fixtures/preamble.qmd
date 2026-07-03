@@ -1,0 +1,17 @@
+---
+title: "teacup preamble fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+  preamble: \usetikzlibrary{arrows}
+---
+
+The `-triangle 60` arrow tip only exists in the `arrows` library, so this
+render fails unless the metadata preamble reaches the LaTeX compile.
+(Regression: raw TeX in metadata was silently dropped by stringify.)
+
+```{.tikz}
+\draw[-triangle 60, accent] (0,0) -- (1,0);
+```

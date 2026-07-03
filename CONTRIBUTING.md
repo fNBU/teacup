@@ -8,10 +8,20 @@ apt install texlive-pictures dvisvgm   # TeX toolchain (see README)
 # just:   https://github.com/casey/just
 ```
 
-Verify the setup with `just test`.
+Static analysis needs two more tools on `PATH`:
+
+- [lua-language-server](https://github.com/LuaLS/lua-language-server) — type/nil checker
+- [luacheck](https://github.com/lunarmodules/luacheck) — linter
+
+Then run `just install-hooks` once to enable the checked-in pre-commit hook
+(`.githooks/pre-commit`), which runs `just check`.
+
+Verify the setup with `just check` and `just test`.
 
 ## Development workflow
 
+- `just check` — static analysis: `lua-language-server --check` and
+  `luacheck`. **PRs are blocked until `just check` passes.**
 - `just test` — full suite: `test-unit` (pure Lua, ~1 s) and `test-e2e`
   (renders `test/fixtures/`, ~15 s)
 - `just example` / `just preview` — render the demo document
@@ -22,6 +32,14 @@ Every behavioral change needs a test: post-processing logic belongs in
 anything involving the TeX toolchain or Quarto integration belongs in
 `test/e2e.sh`. Fixed bugs get a regression check (see "width override with %
 survives gsub" for the pattern).
+
+## Changelog and versioning
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Both are normative for this project: every user-visible change lands with an
+entry under the `Unreleased` heading in the same commit, and releases bump
+the version according to SemVer rules.
 
 ## Architecture in one paragraph
 

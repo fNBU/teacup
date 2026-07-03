@@ -6,6 +6,29 @@ on:
   pull_request:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      # Both tools ship release binaries; the runner's glibc (>= 2.38 on
+      # ubuntu-latest) satisfies the luacheck binary.
+      - name: Install lua-language-server and luacheck
+        run: |
+          mkdir -p "$HOME/.local/opt/lls" "$HOME/.local/bin"
+          curl -sfL https://github.com/LuaLS/lua-language-server/releases/download/3.18.2/lua-language-server-3.18.2-linux-x64.tar.gz \
+            | tar xz -C "$HOME/.local/opt/lls"
+          ln -s "$HOME/.local/opt/lls/bin/lua-language-server" "$HOME/.local/bin/"
+          curl -sfL -o "$HOME/.local/bin/luacheck" \
+            https://github.com/lunarmodules/luacheck/releases/download/v1.2.0/luacheck
+          chmod +x "$HOME/.local/bin/luacheck"
+
+      - name: Run static analysis
+        run: just check
+
   test:
     runs-on: ubuntu-latest
     steps:

@@ -14,7 +14,8 @@ check() { # check <description> — reads exit status of the previous command
 
 # Start from a clean slate so stale artifacts can't mask failures, but keep
 # everything after the run for inspection (`just clean` removes it).
-rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/basic_files "$FIX"/broken_files \
+rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/preamble.html \
+       "$FIX"/basic_files "$FIX"/broken_files "$FIX"/preamble_files \
        "$FIX"/basic.pdf "$FIX"/basic.tex "$FIX"/_fixture-cache
 
 # --- successful render ---------------------------------------------------
@@ -89,6 +90,16 @@ done
 
 grep -q 'every picture/.style={color=ink}' "$TEX"
 check "every-picture ink default injected"
+
+# --- metadata preamble ---------------------------------------------------
+# preamble.qmd needs \usetikzlibrary{arrows} from its metadata preamble to
+# compile at all; a dropped preamble fails the render. (Regression: raw TeX
+# in metadata was silently discarded by stringify.)
+quarto render "$FIX/preamble.qmd" >/dev/null 2>&1 && [ -f "$FIX/preamble.html" ]
+check "preamble.qmd renders (metadata \\usetikzlibrary reaches LaTeX)"
+
+grep -q '<svg' "$FIX/preamble.html"
+check "preamble fixture produced an inline <svg>"
 
 # --- failing render ------------------------------------------------------
 err=$(quarto render "$FIX/broken.qmd" 2>&1)
