@@ -94,6 +94,21 @@ check(tp:find("\\definecolor{ink}", 1, true), "tikz_preamble defines ink")
 check(tp:find("every picture/.style={color=ink}", 1, true),
   "tikz_preamble sets the every-picture ink default")
 
+-- fix_viewbox replaces dvisvgm's extents (inflated rightward, clipped at the
+-- bottom on dvisvgm 3.0.x) with TeX box metrics, keeping min-x/min-y
+out = t.fix_viewbox(SAMPLE, 63.5, 100.0, 4.25)
+check(out:find("viewBox='%-72 %-72 63%.5000 104%.2500'"),
+  "viewBox extents replaced with wd and ht+dp, origin kept",
+  out:match("viewBox='[^']*'"))
+check(out:find("width='63%.5000pt'"), "width attribute replaced")
+check(out:find("height='104%.2500pt'"), "height attribute replaced")
+-- and the corrected width drives the em conversion downstream
+out = t.postprocess(t.fix_viewbox(SAMPLE, 63.5, 100.0, 4.25), HASH, nil, "", "")
+check(out:find('style="width:6%.3500em'), "em width computed from corrected width")
+-- an svg without a viewBox is passed through unchanged
+check(t.fix_viewbox("<svg width='3pt'></svg>", 1, 1, 1) == "<svg width='3pt'></svg>",
+  "svg without viewBox left untouched")
+
 -- meta_to_string must preserve raw TeX, which pandoc.utils.stringify drops.
 -- Regression: \usetikzlibrary{arrows} in the preamble metadata was silently
 -- discarded because pandoc parses it as a RawInline.

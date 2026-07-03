@@ -15,6 +15,7 @@ check() { # check <description> — reads exit status of the previous command
 # Start from a clean slate so stale artifacts can't mask failures, but keep
 # everything after the run for inspection (`just clean` removes it).
 rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/preamble.html \
+       "$FIX"/viewbox.html "$FIX"/viewbox_files \
        "$FIX"/basic_files "$FIX"/broken_files "$FIX"/preamble_files \
        "$FIX"/basic.pdf "$FIX"/basic.tex "$FIX"/_fixture-cache
 
@@ -100,6 +101,22 @@ check "preamble.qmd renders (metadata \\usetikzlibrary reaches LaTeX)"
 
 grep -q '<svg' "$FIX/preamble.html"
 check "preamble fixture produced an inline <svg>"
+
+# --- viewBox correction --------------------------------------------------
+# dvisvgm 3.0.x inflates the bbox of TikZ-matrix diagrams to ~107pt where the
+# TeX box metrics say ~75.6pt. The corrected width must survive to the
+# rendered viewBox and the em-based style width.
+quarto render "$FIX/viewbox.qmd" >/dev/null 2>&1 && [ -f "$FIX/viewbox.html" ]
+check "viewbox.qmd renders"
+
+# quarto may rewrite the attribute to lowercase double-quoted 'viewbox'
+# (harmless: the HTML parser case-normalizes SVG attributes); match either
+vb_width=$(grep -oiE "viewbox=['\"][^'\"]*['\"]" "$FIX/viewbox.html" | head -1 | awk -F"['\" ]" '{print $4}')
+awk -v w="${vb_width:-0}" 'BEGIN { exit !(w > 70 && w < 80) }'
+check "viewBox width matches TeX box metrics (~75.6pt), got '${vb_width:-none}'"
+
+grep -q 'style="width:7\.5[0-9]*em' "$FIX/viewbox.html"
+check "em width derived from corrected metrics (~7.56em)"
 
 # --- failing render ------------------------------------------------------
 err=$(quarto render "$FIX/broken.qmd" 2>&1)

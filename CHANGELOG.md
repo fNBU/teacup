@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- SVG dimensions no longer trust dvisvgm's bounding box, which dvisvgm 3.0.x
+  inflates rightward (up to ~50% on TikZ-matrix diagrams, leaving them
+  left-pinned with phantom space) and clips at the bottom (descenders).
+  The picture is compiled inside a savebox and its exact TeX box metrics
+  (`\wd`, `\ht`+`\dp`) replace the viewBox extents and drive the em width.
+  The cache key now includes a filter version, so stale wide-viewBox entries
+  are invalidated automatically — but rendered documents should be
+  re-rendered once to pick up the corrected sizes.
+
 - Raw TeX in the `preamble` metadata (e.g. `\usetikzlibrary{arrows}`)
   was silently dropped. pandoc parses LaTeX commands in metadata as raw
   inlines/blocks, and `pandoc.utils.stringify` discards raw content; the
