@@ -29,7 +29,7 @@ Each `{.tikz}` code block is compiled `dvilualatex → dvisvgm` (text kept as SV
 ## Install
 
 ```sh
-quarto add fnbu/teacup
+quarto add fNBU/teacup
 ```
 
 This installs the extension under the `_extensions` subdirectory of your
