@@ -23,6 +23,14 @@ anything involving the TeX toolchain or Quarto integration belongs in
 `test/e2e.sh`. Fixed bugs get a regression check (see "width override with %
 survives gsub" for the pattern).
 
+## Changelog and versioning
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Both are normative for this project: every user-visible change lands with an
+entry under the `Unreleased` heading in the same commit, and releases bump
+the version according to SemVer rules.
+
 ## Architecture in one paragraph
 
 `_extensions/teacup/teacup.lua` turns `{.tikz}` code blocks into inline SVG:
