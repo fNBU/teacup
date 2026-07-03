@@ -16,6 +16,7 @@ check() { # check <description> — reads exit status of the previous command
 # everything after the run for inspection (`just clean` removes it).
 rm -rf "$FIX"/basic.html "$FIX"/broken.html "$FIX"/preamble.html \
        "$FIX"/viewbox.html "$FIX"/viewbox_files \
+       "$FIX"/overlay.html "$FIX"/overlay_files \
        "$FIX"/basic_files "$FIX"/broken_files "$FIX"/preamble_files \
        "$FIX"/basic.pdf "$FIX"/basic.tex "$FIX"/_fixture-cache
 
@@ -117,6 +118,21 @@ check "viewBox width matches TeX box metrics (~75.6pt), got '${vb_width:-none}'"
 
 grep -q 'style="width:7\.5[0-9]*em' "$FIX/viewbox.html"
 check "em width derived from corrected metrics (~7.56em)"
+
+# --- overlay ink ---------------------------------------------------------
+# overlay excludes ink from pgf's bbox; without neutralization the TeX-metric
+# viewBox override clips it. Every text x coordinate must fall inside the
+# rendered viewBox (with 12pt slack for the final glyph's advance width).
+quarto render "$FIX/overlay.qmd" >/dev/null 2>&1 && [ -f "$FIX/overlay.html" ]
+check "overlay.qmd renders"
+
+ov_svg=$(grep -o '<svg[^>]*>' "$FIX/overlay.html" | head -1)
+ov_minx=$(printf '%s' "$ov_svg" | grep -oiE "viewbox=['\"][^'\"]*" | awk -F"['\"]" '{print $2}' | awk '{print $1}')
+ov_w=$(printf '%s' "$ov_svg" | grep -oiE "viewbox=['\"][^'\"]*" | awk -F"['\"]" '{print $2}' | awk '{print $3}')
+max_text_x=$(grep -oE "[^a-z]x=['\"][0-9. -]+['\"]" "$FIX/overlay.html" | grep -oE '[0-9]+\.?[0-9]*' | sort -n | tail -1)
+awk -v minx="${ov_minx:-0}" -v w="${ov_w:-0}" -v tx="${max_text_x:-99999}" \
+  'BEGIN { exit !(minx + w >= tx + 12) }'
+check "overlay text inside the viewBox (max text x=${max_text_x:-none}, viewBox spans ${ov_minx:-none}+${ov_w:-none})"
 
 # --- failing render ------------------------------------------------------
 err=$(quarto render "$FIX/broken.qmd" 2>&1)

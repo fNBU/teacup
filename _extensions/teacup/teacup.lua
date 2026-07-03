@@ -25,7 +25,7 @@
 -- Part of the cache key: bump whenever compilation or SVG correction changes
 -- in a way the tex source alone doesn't capture, so stale entries can't be
 -- served.
-local FILTER_VERSION = "2"
+local FILTER_VERSION = "3"
 
 local FONT_SIZE_PT = 10.0
 local CACHE_DIR = "_teacup-cache"
@@ -98,11 +98,15 @@ end
 -- of pgf's mirror-transform text specials, inflating the viewBox rightward
 -- and clipping descenders, so its reported size cannot be trusted.
 -- lrbox, not \savebox{...}: TikZ matrices break inside the argument form.
+-- overlay is neutralized (standalone compile only, not the PDF passthrough):
+-- it excludes ink from pgf's bounding box, which in a standalone picture can
+-- only clip that ink out of the viewBox — here all ink must count.
 local TEX_TEMPLATE = [[
 \documentclass[%spt,dvisvgm]{article}
 \usepackage{amsmath,amssymb}
 \def\pgfsysdriver{pgfsys-dvisvgm.def}
 \usepackage{tikz}
+\tikzset{overlay/.code={}}
 %s
 \pagestyle{empty}
 \newsavebox\teacupbox

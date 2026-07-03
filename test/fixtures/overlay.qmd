@@ -1,0 +1,18 @@
+---
+title: "teacup overlay fixture"
+format: html
+filters:
+  - teacup
+teacup:
+  cache: _fixture-cache
+---
+
+`overlay` excludes ink from pgf's bounding box; in a standalone SVG that
+would clip the ink out of the viewBox (regression: overlay annotations were
+silently cut off). teacup neutralizes the key, so all ink must be inside the
+rendered viewBox.
+
+```{.tikz}
+\draw (0,0) rectangle (2,1);
+\node[overlay, anchor=west] at (2.2,0.5) {way out here $x_{very}$};
+```
